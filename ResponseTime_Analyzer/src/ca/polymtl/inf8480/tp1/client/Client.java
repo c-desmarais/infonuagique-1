@@ -21,6 +21,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
@@ -53,6 +54,9 @@ public class Client {
 			switch (args[0]) {
 			case "create":
 				client.create(args[1]);
+				break;
+			case "lock":
+				client.lock(args[1]);
 				break;
 			case "get":
 				client.get(args[1]);
@@ -207,6 +211,42 @@ public class Client {
 				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void lock(String fileName) {
+		List<String> credentials = getSavedCredentials();
+
+		try {
+			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
+			byte[] checksum = MessageDigest.getInstance("MD5").digest(b);
+			Map<String,String> idAndContent = distantServerStub.lock(fileName, checksum, credentials);
+			Map.Entry<String, String> entry = idAndContent.entrySet().iterator().next();
+			// The file is used by me
+			if (credentials.get(0).equals(entry.getKey())) {
+				// Imprimer message a lutilisateur
+				System.out.println(fileName + " verouille .");
+
+				if(entry.getValue()!=null)
+				{
+					// Mettre a jour le fichier
+					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), entry.getValue().getBytes(StandardCharsets.UTF_8));
+					System.out.println(" (Modifs a " + fileName + " )");
+				}
+				
+			} else { // The file is locked by someone else
+				System.out.println(fileName + " est deja verouille par" + entry.getKey());
+			}
+			
+			
+		} catch (RemoteException e) {
+			System.out.println("Erreur: " + e.getMessage());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

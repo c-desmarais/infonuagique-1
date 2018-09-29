@@ -4,6 +4,7 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 public interface ServerInterface extends Remote {
 	int execute(int a, int b) throws RemoteException;
@@ -16,4 +17,5 @@ public interface ServerInterface extends Remote {
 	Map<String, String> list(List<String> credentials) throws RemoteException;
 	Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException;
 	String get(String fileName, byte[] checksum, List<String> credentials) throws RemoteException;
+	Map<String, String> lock(String fileName, byte[] checksum, List<String> credentials) throws RemoteException;
 }

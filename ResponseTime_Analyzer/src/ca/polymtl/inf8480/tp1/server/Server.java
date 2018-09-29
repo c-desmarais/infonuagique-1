@@ -15,6 +15,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
@@ -195,4 +196,33 @@ public class Server implements ServerInterface {
 		}
 		return null;
 	}
+
+	@Override
+	public Map<String, String> lock(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		
+		// check if file exists
+		File f = new File(FILES_DIRECTORY_NAME + fileName);
+		if (f.exists() && !f.isDirectory()) {
+			// check if file is already locked by another client
+			String currentUser = filesAndLocks.get(fileName);
+			Map<String, String> infos = new HashMap<String, String>();
+			if (currentUser.equals("")) {
+				filesAndLocks.put(fileName, credentials.get(0));
+				infos.put(credentials.get(0), get(fileName, checksum, credentials));
+			}
+			else // dont update file content if the file is locked by other user
+			{
+				infos.put(currentUser, null);
+			}
+			return infos;
+				
+		} else { 
+			throw new RemoteException(fileName + "existe pas.");
+		}		
+	}
+	
 }
