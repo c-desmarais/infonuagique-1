@@ -91,7 +91,7 @@ public class Client {
 		System.out.println("create <file name>");
 		System.out.println("list");
 		System.out.println("lock <file name>");
-		System.out.println("push <file name>");		
+		System.out.println("push <file name>");
 	}
 
 	public Client(String distantServerHostname) {
@@ -102,13 +102,11 @@ public class Client {
 		}
 
 		// localServer = new FakeServer();
-		//localServerStub = loadServerStub("127.0.0.1");
+		// localServerStub = loadServerStub("127.0.0.1");
 
 		if (distantServerHostname != null) {
 			distantServerStub = loadServerStub(distantServerHostname);
-		}
-		else
-		{
+		} else {
 			System.out.println("Invalid distantServerHostname");
 		}
 	}
@@ -235,34 +233,33 @@ public class Client {
 		try {
 			// check if file exists
 			File f = new File(FILES_DIRECTORY_NAME + fileName);
-			
+
 			byte[] checksum = null;
-			
+
 			// if the file exists, get the appropriate checksum
 			if (f.exists()) {
 				byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
 				checksum = MessageDigest.getInstance("MD5").digest(b);
-			} 
-			
-			Map<String,String> idAndContent = distantServerStub.lock(fileName, checksum, credentials);
+			}
+
+			Map<String, String> idAndContent = distantServerStub.lock(fileName, checksum, credentials);
 			Map.Entry<String, String> entry = idAndContent.entrySet().iterator().next();
 			// The file is used by me
 			if (credentials.get(0).equals(entry.getKey())) {
 				// Imprimer message a lutilisateur
 				System.out.println(fileName + " verouille .");
 
-				if(entry.getValue()!=null)
-				{
+				if (entry.getValue() != null) {
 					// Mettre a jour le fichier
-					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), entry.getValue().getBytes(StandardCharsets.UTF_8));
+					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName),
+							entry.getValue().getBytes(StandardCharsets.UTF_8));
 					System.out.println(" (Modifs a " + fileName + " )");
 				}
-				
+
 			} else { // The file is locked by someone else
 				System.out.println(fileName + " est deja verouille par" + entry.getKey());
 			}
-			
-			
+
 		} catch (RemoteException e) {
 			System.out.println(e.getMessage());
 		} catch (IOException e) {
@@ -280,12 +277,9 @@ public class Client {
 		try {
 			Map<String, String> filesAndLocks = distantServerStub.list(credentials);
 			String userLock = filesAndLocks.get(fileName);
-			if(userLock==null)
-			{
+			if (userLock == null) {
 				System.out.println("operation refusee : vous devez verouiller le fichier d'abord. ");
-			}
-			else if (userLock.equals(credentials.get(0)))
-			{
+			} else if (userLock.equals(credentials.get(0))) {
 				// check if file exists
 				File f = new File(FILES_DIRECTORY_NAME + fileName);
 				if (f.exists() && !f.isDirectory()) {
@@ -296,10 +290,8 @@ public class Client {
 				} else {
 					System.out.println("Le fichier " + fileName + " n'existe pas.");
 				}
-			}
-			else
-			{
-				System.out.println(fileName +" est deja verouille par " + userLock );
+			} else {
+				System.out.println(fileName + " est deja verouille par " + userLock);
 			}
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
