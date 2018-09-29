@@ -224,8 +224,17 @@ public class Client {
 		List<String> credentials = getSavedCredentials();
 
 		try {
-			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
-			byte[] checksum = MessageDigest.getInstance("MD5").digest(b);
+			// check if file exists
+			File f = new File(FILES_DIRECTORY_NAME + fileName);
+			
+			byte[] checksum = null;
+			
+			// if the file exists, get the appropriate checksum
+			if (f.exists()) {
+				byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
+				checksum = MessageDigest.getInstance("MD5").digest(b);
+			} 
+			
 			Map<String,String> idAndContent = distantServerStub.lock(fileName, checksum, credentials);
 			Map.Entry<String, String> entry = idAndContent.entrySet().iterator().next();
 			// The file is used by me
