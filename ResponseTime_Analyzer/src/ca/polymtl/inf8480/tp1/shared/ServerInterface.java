@@ -18,4 +18,5 @@ public interface ServerInterface extends Remote {
 	Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException;
 	String get(String fileName, byte[] checksum, List<String> credentials) throws RemoteException;
 	Map<String, String> lock(String fileName, byte[] checksum, List<String> credentials) throws RemoteException;
+	void push(String fileName, String content, List<String> credentials) throws RemoteException;
 }

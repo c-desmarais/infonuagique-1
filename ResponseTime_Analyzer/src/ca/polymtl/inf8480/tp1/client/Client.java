@@ -61,6 +61,9 @@ public class Client {
 			case "get":
 				client.get(args[1]);
 				break;
+			case "push":
+				client.push(args[1]);
+				break;
 			default:
 				break;
 			}
@@ -178,8 +181,7 @@ public class Client {
 			Map<String, String> filesAndContent = distantServerStub.syncLocalDirectory(credentials);
 			for (Map.Entry<String, String> entry : filesAndContent.entrySet()) {
 				Files.write(Paths.get(FILES_DIRECTORY_NAME + entry.getKey()),
-						entry.getValue().getBytes(StandardCharsets.UTF_8)); // Arrays.asList(entry.getValue()),
-																			// Charset.forName("UTF-8"));
+						entry.getValue().getBytes(StandardCharsets.UTF_8));
 			}
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
@@ -255,11 +257,46 @@ public class Client {
 			
 			
 		} catch (RemoteException e) {
-			System.out.println("Erreur: " + e.getMessage());
+			System.out.println(e.getMessage());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
+	private void push(String fileName) {
+		List<String> credentials = getSavedCredentials();
+
+		try {
+			Map<String, String> filesAndLocks = distantServerStub.list(credentials);
+			String userLock = filesAndLocks.get(fileName);
+			if(userLock==null)
+			{
+				System.out.println("operation refusee : vous devez verouiller le fichier d'abord. ");
+			}
+			else if (userLock.equals(credentials.get(0)))
+			{
+				// check if file exists
+				File f = new File(FILES_DIRECTORY_NAME + fileName);
+				if (f.exists() && !f.isDirectory()) {
+					// read the content of the file and send it to server
+					String content = new String(Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName)));
+					distantServerStub.push(fileName, content, credentials);
+					System.out.println(fileName + " a ete envoye au serveur.");
+				} else {
+					System.out.println("Le fichier " + fileName + " n'existe pas.");
+				}
+			}
+			else
+			{
+				System.out.println(fileName +" est deja verouille par " + userLock );
+			}
+		} catch (RemoteException e) {
+			System.out.println("Erreur: " + e.getMessage());
+		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}

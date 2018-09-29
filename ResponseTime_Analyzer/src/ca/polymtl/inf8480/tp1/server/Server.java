@@ -2,8 +2,10 @@ package ca.polymtl.inf8480.tp1.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -221,8 +223,39 @@ public class Server implements ServerInterface {
 			return infos;
 				
 		} else { 
-			throw new RemoteException(fileName + "existe pas.");
+			throw new RemoteException(fileName + " existe pas.");
 		}		
+	}
+	
+	@Override
+	public void push(String fileName, String content, List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		
+		// TODO check if we need to verify more here instead than in the client (lock)
+		try {
+		
+			// check if file exists
+			File f = new File(FILES_DIRECTORY_NAME + fileName);
+			if (f.exists() && !f.isDirectory()) {
+				// check if file is already locked by another client
+				String currentUser = filesAndLocks.get(fileName);
+				if (currentUser.equals(credentials.get(0))) {
+					
+					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+					
+					filesAndLocks.put(fileName, "");
+				}
+			} else { 
+				throw new RemoteException(fileName + " existe pas.");
+			}
+		} 
+		catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}	
 	}
 	
 }
