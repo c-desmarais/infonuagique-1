@@ -139,4 +139,21 @@ public class Server implements ServerInterface {
 			}
 		}
 	}
+
+	@Override
+	public Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException {
+		Map<String, String> filesAndContent = new HashMap<String, String>();
+		for(Map.Entry<String, String> entry: filesAndLocks.entrySet())
+		{
+				String content;
+				try {
+					content = new String(Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME+entry.getKey())));
+					filesAndContent.put(entry.getKey(), content);
+				} catch (IOException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+		}
+		return filesAndContent;
+	}
 }

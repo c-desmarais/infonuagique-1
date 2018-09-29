@@ -1,11 +1,14 @@
 package ca.polymtl.inf8480.tp1.client;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -24,6 +27,7 @@ public class Client {
 	private static int testLength = 0;
 	
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
+	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
 	
 
 	FakeServer  localServer = null; // Pour tester la latence d'un appel de
@@ -54,7 +58,8 @@ public class Client {
 			switch(args[0]) {
 				case "list": client.printlist();
 							break;
-				
+				case "syncLocalDirectory": client.syncLocalDirectory();
+				break;
 				default: break;
 			}
 		}
@@ -166,6 +171,31 @@ public class Client {
 		catch (RemoteException e)
 		{
 			System.out.println("Erreur: " + e.getMessage());
+		}
+	}
+
+	private void syncLocalDirectory() {
+		List<String> credentials = getSavedCredentials();
+		
+		File directory = new File(FILES_DIRECTORY_NAME);
+		if(!directory.exists())
+		{
+			directory.mkdir();
+		}
+		
+		try {
+			Map<String,String> filesAndContent = distantServerStub.syncLocalDirectory(credentials);
+			for(Map.Entry<String, String> entry: filesAndContent.entrySet())
+			{
+				Files.write(Paths.get(FILES_DIRECTORY_NAME+entry.getKey()), entry.getValue().getBytes(StandardCharsets.UTF_8)); //Arrays.asList(entry.getValue()), Charset.forName("UTF-8"));
+			}
+		}
+		catch (RemoteException e)
+		{
+			System.out.println("Erreur: " + e.getMessage());
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
 		}
 	}
 

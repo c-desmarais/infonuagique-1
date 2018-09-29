@@ -14,4 +14,5 @@ public interface ServerInterface extends Remote {
 	//List<> list()
 	boolean create(String fileName, List<String> credentials) throws RemoteException;
 	Map<String, String> list(List<String> credentials) throws RemoteException;
+	Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException;
 }
