@@ -95,6 +95,7 @@ public class Server implements ServerInterface {
 				if (filename.equals(CREDENTIALS_METADATA_FILE)) {
 					users = map;
 				} else if (filename.equals(LOCK_METADATA_FILE)) {
+					// TODO : debug this (verify that this gets filled up properly : bug on list)
 					filesAndLocks = map;
 				}
 			} 
