@@ -3,6 +3,7 @@ package ca.polymtl.inf8480.tp1.client;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.rmi.AccessException;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
@@ -22,7 +24,7 @@ public class Client {
 	private static int testLength = 0;
 	
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
-	private Path credentialsPath = null;
+	
 
 	FakeServer  localServer = null; // Pour tester la latence d'un appel de
 									// fonction normal.
@@ -49,19 +51,19 @@ public class Client {
 			}
 		}
 		else if (args.length == 1) {
-			/*switch(args[0]) {
-				case "List": 
+			switch(args[0]) {
+				case "List": client.printlist();
 							break;
 				
 				default: break;
-			}*/
+			}
 		}
 		else
 		{
 			client.PrintArgErrorMsg();
 		}
 	}
-	
+
 	private void PrintArgErrorMsg()
 	{
 		System.out.println("Veuillez specifier des arguments parmi la liste suivante:");
@@ -90,7 +92,6 @@ public class Client {
 		try {
 			if( distantServerStub.newUser(login, password) )
 			{
-				credentialsPath = Paths.get("localAuthFile.txt");
 				createLocalAuthFile(login, password);
 				System.out.println("Bravo le user " + login +" a ete cree!");
 			}
@@ -107,7 +108,7 @@ public class Client {
 
 	private Path createLocalAuthFile(String login, String password) {
 		try {
-			return Files.write(credentialsPath,Arrays.asList(login,password), Charset.forName("UTF-8"));
+			return Files.write(Paths.get(CREDENTIALS_FILE_NAME),Arrays.asList(login,password), Charset.forName("UTF-8"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -139,13 +140,33 @@ public class Client {
 		List<String> credentials = new ArrayList<String>();
 		try
 		{
-			credentials = Files.readAllLines(credentialsPath);
+			credentials = Files.readAllLines(Paths.get(CREDENTIALS_FILE_NAME));
+		}
+		catch (NoSuchFileException e)
+		{
+			System.out.println("Vous devez vous enregistrer d'abord avec la commande new <id> <password>.");
 		}
 		catch (IOException e)
 		{
-			e.printStackTrace();
+			e.printStackTrace();	
 		}
 		return credentials;
+	}
+	
+	private void printlist() {
+		List<String> credentials = getSavedCredentials();
+		
+		try {
+			Map<String,String> filesAndLocks = distantServerStub.list(credentials);
+			for(Map.Entry<String, String> entry: filesAndLocks.entrySet())
+			{
+				System.out.println("* " + entry.getKey() + "    " + (entry.getValue() == "" ? "non verouille" : entry.getValue()));
+			}
+		}
+		catch (RemoteException e)
+		{
+			System.out.println("Erreur: " + e.getMessage());
+		}
 	}
 
 	private void run() {

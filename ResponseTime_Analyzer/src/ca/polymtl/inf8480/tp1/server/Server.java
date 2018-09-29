@@ -16,6 +16,9 @@ import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 public class Server implements ServerInterface {
 
 	Map<String, String> users = new HashMap<String, String>();
+	Map<String, String> filesAndLocks = new HashMap<String, String>();
+	
+	private final static String FILES_DIRECTORY_NAME = "/FilesDirectory/";
 	
 	public static void main(String[] args) {
 		Server server = new Server();
@@ -24,6 +27,7 @@ public class Server implements ServerInterface {
 
 	public Server() {
 		super();
+		initializeFilesAndLocks();
 	}
 
 	private void run() {
@@ -91,14 +95,41 @@ public class Server implements ServerInterface {
 		}
 		try
 		{
-			File file = new File(fileName);
-			return file.createNewFile();
+			File file = new File(FILES_DIRECTORY_NAME+fileName);
+					
+			if(file.createNewFile())
+			{
+				filesAndLocks.put(fileName, "");
+				return true;
+			}
+			return false;
 		}
 		catch(IOException e)
 		{
 			System.out.println("Error Empty file not created : " + fileName);
 			e.printStackTrace();
 			throw new RemoteException(e.getMessage());
+		}
+	}
+
+	@Override
+	public Map<String, String> list(List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		return filesAndLocks;
+	}
+	
+	private void initializeFilesAndLocks()
+	{
+		File dir = new  File(FILES_DIRECTORY_NAME);
+		File[] files = dir.listFiles();
+		if(files!=null)
+		{
+			for(File aFile : files) {
+				filesAndLocks.put(aFile.getName(), "");
+			}
 		}
 	}
 }
