@@ -43,9 +43,8 @@ public class Client {
 		}
 		else if (args.length == 2) {
 			switch(args[0]) {
-				case "create": 
+				case "create": client.create(args[1]);
 								break;
-				
 				default: break;
 			}
 		}
@@ -91,9 +90,8 @@ public class Client {
 		try {
 			if( distantServerStub.newUser(login, password) )
 			{
-				createLocalAuthFile(login, password);
 				credentialsPath = Paths.get("localAuthFile.txt");
-				distantServerStub.newUser(login, password);
+				createLocalAuthFile(login, password);
 				System.out.println("Bravo le user " + login +" a ete cree!");
 			}
 			else
@@ -116,14 +114,24 @@ public class Client {
 		return null;
 	}
 	
-	private boolean create(String fileName)
+	private void create(String fileName)
 	{
 		List<String> credentials = getSavedCredentials();
 		
-		
-		
-		
-		return true;
+		try {
+			if( distantServerStub.create(fileName, credentials) )
+			{
+				System.out.println(fileName +" ajoute.");
+			}
+			else
+			{
+				System.out.println(fileName +" existe deja.");
+			}
+		}
+		catch (RemoteException e)
+		{
+			System.out.println("Erreur: " + e.getMessage());
+		}
 	}
 	
 	private List<String> getSavedCredentials()

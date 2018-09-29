@@ -1,11 +1,14 @@
 package ca.polymtl.inf8480.tp1.server;
 
+import java.io.File;
+import java.io.IOException;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
@@ -76,13 +79,26 @@ public class Server implements ServerInterface {
 	}
 
 	@Override
-	public boolean verify(String login, String password) throws RemoteException {
-		return password.equals(users.get(login));
+	public boolean verify(List<String> credentials) throws RemoteException {
+		return credentials.get(1).equals(users.get(credentials.get(0)));
 	}
 
 	@Override
-	public boolean create(String Name) throws RemoteException {
-		// TODO Auto-generated method stub
-		return false;
+	public boolean create(String fileName, List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		try
+		{
+			File file = new File(fileName);
+			return file.createNewFile();
+		}
+		catch(IOException e)
+		{
+			System.out.println("Error Empty file not created : " + fileName);
+			e.printStackTrace();
+			throw new RemoteException(e.getMessage());
+		}
 	}
 }
