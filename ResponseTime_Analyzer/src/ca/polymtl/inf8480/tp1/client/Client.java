@@ -26,7 +26,7 @@ public class Client {
 
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
-	private final static String DISTANT_HOSTNAME = "127.0.0.1";//"132.207.12.114";
+	private final static String DISTANT_HOSTNAME = "132.207.12.114";
 
 	private static ServerInterface distantServerStub = null;
 
