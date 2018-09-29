@@ -243,9 +243,10 @@ public class Server implements ServerInterface {
 				// check if file is already locked by another client
 				String currentUser = filesAndLocks.get(fileName);
 				if (currentUser.equals(credentials.get(0))) {
-					
+					System.out.println("writing content to file" + content);
 					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
-					
+
+					System.out.println("writing content to file" + content);
 					filesAndLocks.put(fileName, "");
 				}
 			} else { 
