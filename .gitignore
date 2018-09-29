@@ -4,3 +4,4 @@
 ResponseTime_Analyzer/FilesDirectory/*
 ResponseTime_Analyzer/localAuthFile.txt
 RemoteSystemsTempFiles/*
+bin/*

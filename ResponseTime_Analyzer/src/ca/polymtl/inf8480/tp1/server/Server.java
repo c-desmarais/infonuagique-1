@@ -17,7 +17,6 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
@@ -78,23 +77,6 @@ public class Server implements ServerInterface {
 	}
 
 	/*
-	 * Méthode accessible par RMI. Additionne les deux nombres passés en
-	 * paramètre.
-	 */
-	@Override
-	public int execute(int a, int b) throws RemoteException {
-		return a + b;
-	}
-	
-	/*
-	 * Méthode accessible par RMI. Retour 1.
-	 */
-	@Override
-	public int testArrayLengthImpact(byte[] value) throws RemoteException {
-		return 1;
-	}
-
-	/*
 	 * Méthode accessible par RMI. Return false if the user already exists.
 	 */
 	@Override
@@ -107,7 +89,6 @@ public class Server implements ServerInterface {
 		return false;
 	}
 
-	@Override
 	public boolean verify(List<String> credentials) throws RemoteException {
 		return credentials.get(1).equals(users.get(credentials.get(0)));
 	}
@@ -177,7 +158,6 @@ public class Server implements ServerInterface {
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
 		
-		String content;
 		try {
 			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME+fileName));
 			byte[] hash = MessageDigest.getInstance("MD5").digest(b);

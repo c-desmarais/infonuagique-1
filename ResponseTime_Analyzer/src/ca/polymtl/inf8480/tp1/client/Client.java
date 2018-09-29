@@ -8,7 +8,6 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.rmi.AccessException;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
@@ -18,29 +17,21 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.Map.Entry;
 
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
 public class Client {
 
-	private static int testLength = 0;
-
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
-	private final static String DISTANT_HOSTNAME = "132.207.12.114";
+	private final static String DISTANT_HOSTNAME = "127.0.0.1";//"132.207.12.114";
 
-	FakeServer localServer = null; // Pour tester la latence d'un appel de
-									// fonction normal.
-	private static ServerInterface localServerStub = null;
 	private static ServerInterface distantServerStub = null;
 
 	public static void main(String[] args) throws RemoteException {
 		Client client = new Client(DISTANT_HOSTNAME);
-		// client.run();
 		if (args.length == 3) {
 			switch (args[0]) {
 			case "new":
@@ -100,9 +91,6 @@ public class Client {
 		if (System.getSecurityManager() == null) {
 			System.setSecurityManager(new SecurityManager());
 		}
-
-		// localServer = new FakeServer();
-		//localServerStub = loadServerStub("127.0.0.1");
 
 		if (distantServerHostname != null) {
 			distantServerStub = loadServerStub(distantServerHostname);
@@ -259,7 +247,7 @@ public class Client {
 				}
 				
 			} else { // The file is locked by someone else
-				System.out.println(fileName + " est deja verouille par" + entry.getKey());
+				System.out.println(fileName + " est deja verouille par " + entry.getKey());
 			}
 			
 			
@@ -309,22 +297,6 @@ public class Client {
 		}
 	}
 
-	private void run() {
-
-		// Check if we are testing the effect of different array length on the RMI
-		byte[] bytes = new byte[(int) Math.pow(10, testLength)];
-
-		appelNormal(bytes);
-
-		if (localServerStub != null) {
-			appelRMILocal(bytes);
-		}
-
-		if (distantServerStub != null) {
-			appelRMIDistant(bytes);
-		}
-	}
-
 	private ServerInterface loadServerStub(String hostname) {
 		ServerInterface stub = null;
 
@@ -342,53 +314,4 @@ public class Client {
 		return stub;
 	}
 
-	private void appelNormal(byte[] bytes) {
-		long start = System.nanoTime();
-		int result = -1;
-		if (testLength == 0) {
-			result = localServer.execute(4, 7);
-		} else {
-			result = localServer.testArrayLengthImpact(bytes);
-		}
-		long end = System.nanoTime();
-
-		System.out.println("Temps écoulé appel normal: " + (end - start) + " ns");
-		System.out.println("Résultat appel normal: " + result);
-	}
-
-	private void appelRMILocal(byte[] bytes) {
-		try {
-			long start = System.nanoTime();
-			int result = -1;
-			if (testLength == 0) {
-				result = localServerStub.execute(4, 7);
-			} else {
-				result = localServerStub.testArrayLengthImpact(bytes);
-			}
-			long end = System.nanoTime();
-
-			System.out.println("Temps écoulé appel RMI local: " + (end - start) + " ns");
-			System.out.println("Résultat appel RMI local: " + result);
-		} catch (RemoteException e) {
-			System.out.println("Erreur: " + e.getMessage());
-		}
-	}
-
-	private void appelRMIDistant(byte[] bytes) {
-		try {
-			long start = System.nanoTime();
-			int result = -1;
-			if (testLength == 0) {
-				result = distantServerStub.execute(4, 7);
-			} else {
-				result = distantServerStub.testArrayLengthImpact(bytes);
-			}
-			long end = System.nanoTime();
-
-			System.out.println("Temps écoulé appel RMI distant: " + (end - start) + " ns");
-			System.out.println("Résultat appel RMI distant: " + result);
-		} catch (RemoteException e) {
-			System.out.println("Erreur: " + e.getMessage());
-		}
-	}
 }
