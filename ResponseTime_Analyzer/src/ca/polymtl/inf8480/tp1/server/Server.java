@@ -9,6 +9,9 @@ import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -34,6 +37,18 @@ public class Server implements ServerInterface {
 		if(!directory.exists())
 		{
 			directory.mkdir();
+		}
+	}
+	
+	private void initializeFilesAndLocks()
+	{
+		File dir = new  File(FILES_DIRECTORY_NAME);
+		File[] files = dir.listFiles();
+		if(files!=null)
+		{
+			for(File aFile : files) {
+				filesAndLocks.put(aFile.getName(), "");
+			}
 		}
 	}
 
@@ -100,6 +115,7 @@ public class Server implements ServerInterface {
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
+		
 		try
 		{
 			File file = new File(FILES_DIRECTORY_NAME+fileName);
@@ -125,23 +141,17 @@ public class Server implements ServerInterface {
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
+		
 		return filesAndLocks;
-	}
-	
-	private void initializeFilesAndLocks()
-	{
-		File dir = new  File(FILES_DIRECTORY_NAME);
-		File[] files = dir.listFiles();
-		if(files!=null)
-		{
-			for(File aFile : files) {
-				filesAndLocks.put(aFile.getName(), "");
-			}
-		}
 	}
 
 	@Override
 	public Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		
 		Map<String, String> filesAndContent = new HashMap<String, String>();
 		for(Map.Entry<String, String> entry: filesAndLocks.entrySet())
 		{
@@ -155,5 +165,34 @@ public class Server implements ServerInterface {
 				}
 		}
 		return filesAndContent;
+	}
+
+	@Override
+	public String get(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
+		if(!verify(credentials))
+		{
+			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
+		}
+		
+		String content;
+		try {
+			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME+fileName));
+			byte[] hash = MessageDigest.getInstance("MD5").digest(b);
+			
+			if(Arrays.equals(hash, checksum))
+			{
+				return null;			
+			}
+			else
+			{
+				return new String(b);
+			}
+			
+			
+		} catch (IOException | NoSuchAlgorithmException e) {
+			// TODO gerer le cas ou le nom du fichier est inexistant
+			e.printStackTrace();
+		}
+		return null;
 	}
 }

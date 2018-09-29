@@ -14,6 +14,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -23,54 +25,58 @@ import java.util.Map;
 import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
 public class Client {
-	
+
 	private static int testLength = 0;
-	
+
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
-	
 
-	FakeServer  localServer = null; // Pour tester la latence d'un appel de
+	FakeServer localServer = null; // Pour tester la latence d'un appel de
 									// fonction normal.
 	private static ServerInterface localServerStub = null;
 	private static ServerInterface distantServerStub = null;
-	
+
 	public static void main(String[] args) throws RemoteException {
 		String distantHostname = "132.207.12.114";
 		Client client = new Client(distantHostname);
-		//client.run();
+		// client.run();
 		if (args.length == 3) {
-			switch(args[0]) {
-				case "new": client.newUser(args[1],args[2]);
-							break;
-				
-				default: break;
-			}
-		}
-		else if (args.length == 2) {
-			switch(args[0]) {
-				case "create": client.create(args[1]);
-								break;
-				default: break;
-			}
-		}
-		else if (args.length == 1) {
-			switch(args[0]) {
-				case "list": client.printlist();
-							break;
-				case "syncLocalDirectory": client.syncLocalDirectory();
+			switch (args[0]) {
+			case "new":
+				client.newUser(args[1], args[2]);
 				break;
-				default: break;
+
+			default:
+				break;
 			}
-		}
-		else
-		{
+		} else if (args.length == 2) {
+			switch (args[0]) {
+			case "create":
+				client.create(args[1]);
+				break;
+			case "get":
+				client.get(args[1]);
+				break;
+			default:
+				break;
+			}
+		} else if (args.length == 1) {
+			switch (args[0]) {
+			case "list":
+				client.printlist();
+				break;
+			case "syncLocalDirectory":
+				client.syncLocalDirectory();
+				break;
+			default:
+				break;
+			}
+		} else {
 			client.PrintArgErrorMsg();
 		}
 	}
 
-	private void PrintArgErrorMsg()
-	{
+	private void PrintArgErrorMsg() {
 		System.out.println("Veuillez specifier des arguments parmi la liste suivante:");
 		System.out.println("new <login> <password>");
 		System.out.println("create <name>");
@@ -85,113 +91,93 @@ public class Client {
 			System.setSecurityManager(new SecurityManager());
 		}
 
-		//localServer = new FakeServer();
+		// localServer = new FakeServer();
 		localServerStub = loadServerStub("127.0.0.1");
 
 		if (distantServerHostname != null) {
 			distantServerStub = loadServerStub(distantServerHostname);
 		}
 	}
-	
+
 	private void newUser(String login, String password) {
 		try {
-			if( distantServerStub.newUser(login, password) )
-			{
+			if (distantServerStub.newUser(login, password)) {
 				createLocalAuthFile(login, password);
-				System.out.println("Bravo le user " + login +" a ete cree!");
+				System.out.println("Bravo le user " + login + " a ete cree!");
+			} else {
+				System.out.println("Erreur le user " + login + " existe deja!");
 			}
-			else
-			{
-				System.out.println("Erreur le user " + login +" existe deja!");
-			}
-		}
-		catch (RemoteException e)
-		{
+		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		}
 	}
 
 	private Path createLocalAuthFile(String login, String password) {
 		try {
-			return Files.write(Paths.get(CREDENTIALS_FILE_NAME),Arrays.asList(login,password), Charset.forName("UTF-8"));
+			return Files.write(Paths.get(CREDENTIALS_FILE_NAME), Arrays.asList(login, password),
+					Charset.forName("UTF-8"));
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 		return null;
 	}
-	
-	private void create(String fileName)
-	{
+
+	private void create(String fileName) {
 		List<String> credentials = getSavedCredentials();
-		
+
 		try {
-			if( distantServerStub.create(fileName, credentials) )
-			{
-				System.out.println(fileName +" ajoute.");
+			if (distantServerStub.create(fileName, credentials)) {
+				System.out.println(fileName + " ajoute.");
+			} else {
+				System.out.println(fileName + " existe deja.");
 			}
-			else
-			{
-				System.out.println(fileName +" existe deja.");
-			}
-		}
-		catch (RemoteException e)
-		{
+		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		}
 	}
-	
-	private List<String> getSavedCredentials()
-	{
+
+	private List<String> getSavedCredentials() {
 		List<String> credentials = new ArrayList<String>();
-		try
-		{
+		try {
 			credentials = Files.readAllLines(Paths.get(CREDENTIALS_FILE_NAME));
-		}
-		catch (NoSuchFileException e)
-		{
+		} catch (NoSuchFileException e) {
 			System.out.println("Vous devez vous enregistrer d'abord avec la commande new <id> <password>.");
-		}
-		catch (IOException e)
-		{
-			e.printStackTrace();	
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 		return credentials;
 	}
-	
+
 	private void printlist() {
 		List<String> credentials = getSavedCredentials();
-		
+
 		try {
-			Map<String,String> filesAndLocks = distantServerStub.list(credentials);
-			for(Map.Entry<String, String> entry: filesAndLocks.entrySet())
-			{
-				System.out.println("* " + entry.getKey() + "    " + (entry.getValue().equals("") ? "non verouille" : entry.getValue()));
+			Map<String, String> filesAndLocks = distantServerStub.list(credentials);
+			for (Map.Entry<String, String> entry : filesAndLocks.entrySet()) {
+				System.out.println("* " + entry.getKey() + "    "
+						+ (entry.getValue().equals("") ? "non verouille" : entry.getValue()));
 			}
-		}
-		catch (RemoteException e)
-		{
+		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		}
 	}
 
 	private void syncLocalDirectory() {
 		List<String> credentials = getSavedCredentials();
-		
+
 		File directory = new File(FILES_DIRECTORY_NAME);
-		if(!directory.exists())
-		{
+		if (!directory.exists()) {
 			directory.mkdir();
 		}
-		
+
 		try {
-			Map<String,String> filesAndContent = distantServerStub.syncLocalDirectory(credentials);
-			for(Map.Entry<String, String> entry: filesAndContent.entrySet())
-			{
-				Files.write(Paths.get(FILES_DIRECTORY_NAME+entry.getKey()), entry.getValue().getBytes(StandardCharsets.UTF_8)); //Arrays.asList(entry.getValue()), Charset.forName("UTF-8"));
+			Map<String, String> filesAndContent = distantServerStub.syncLocalDirectory(credentials);
+			for (Map.Entry<String, String> entry : filesAndContent.entrySet()) {
+				Files.write(Paths.get(FILES_DIRECTORY_NAME + entry.getKey()),
+						entry.getValue().getBytes(StandardCharsets.UTF_8)); // Arrays.asList(entry.getValue()),
+																			// Charset.forName("UTF-8"));
 			}
-		}
-		catch (RemoteException e)
-		{
+		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
@@ -199,11 +185,42 @@ public class Client {
 		}
 	}
 
+	private void get(String fileName) {
+		List<String> credentials = getSavedCredentials();
+
+		try {
+			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
+			byte[] checksum = MessageDigest.getInstance("MD5").digest(b);
+			String file = distantServerStub.get(fileName, checksum, credentials);
+			if (file != null) {
+				Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), file.getBytes(StandardCharsets.UTF_8));
+			}
+		} catch (RemoteException e) {
+			System.out.println("Erreur: " + e.getMessage());
+		} catch (NoSuchFileException e) {
+			try {
+				String file = distantServerStub.get(fileName, null, credentials);
+				if (file != null) {
+					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), file.getBytes(StandardCharsets.UTF_8));
+				}
+			} catch (Exception e1) {
+				// TODO Auto-generated catch block
+				e1.printStackTrace();
+			}
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (NoSuchAlgorithmException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
+
 	private void run() {
-		
+
 		// Check if we are testing the effect of different array length on the RMI
 		byte[] bytes = new byte[(int) Math.pow(10, testLength)];
-		
+
 		appelNormal(bytes);
 
 		if (localServerStub != null) {
@@ -222,8 +239,7 @@ public class Client {
 			Registry registry = LocateRegistry.getRegistry(hostname);
 			stub = (ServerInterface) registry.lookup("server");
 		} catch (NotBoundException e) {
-			System.out.println("Erreur: Le nom '" + e.getMessage()
-					+ "' n'est pas défini dans le registre.");
+			System.out.println("Erreur: Le nom '" + e.getMessage() + "' n'est pas défini dans le registre.");
 		} catch (AccessException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		} catch (RemoteException e) {
@@ -236,16 +252,14 @@ public class Client {
 	private void appelNormal(byte[] bytes) {
 		long start = System.nanoTime();
 		int result = -1;
-		if ( testLength == 0 ) {
+		if (testLength == 0) {
 			result = localServer.execute(4, 7);
-		}
-		else {
+		} else {
 			result = localServer.testArrayLengthImpact(bytes);
 		}
 		long end = System.nanoTime();
 
-		System.out.println("Temps écoulé appel normal: " + (end - start)
-				+ " ns");
+		System.out.println("Temps écoulé appel normal: " + (end - start) + " ns");
 		System.out.println("Résultat appel normal: " + result);
 	}
 
@@ -253,16 +267,14 @@ public class Client {
 		try {
 			long start = System.nanoTime();
 			int result = -1;
-			if ( testLength == 0 ) {
+			if (testLength == 0) {
 				result = localServerStub.execute(4, 7);
-			}
-			else {
+			} else {
 				result = localServerStub.testArrayLengthImpact(bytes);
 			}
 			long end = System.nanoTime();
 
-			System.out.println("Temps écoulé appel RMI local: " + (end - start)
-					+ " ns");
+			System.out.println("Temps écoulé appel RMI local: " + (end - start) + " ns");
 			System.out.println("Résultat appel RMI local: " + result);
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
@@ -273,16 +285,14 @@ public class Client {
 		try {
 			long start = System.nanoTime();
 			int result = -1;
-			if ( testLength == 0 ) {
+			if (testLength == 0) {
 				result = distantServerStub.execute(4, 7);
-			}
-			else {
+			} else {
 				result = distantServerStub.testArrayLengthImpact(bytes);
 			}
 			long end = System.nanoTime();
 
-			System.out.println("Temps écoulé appel RMI distant: "
-					+ (end - start) + " ns");
+			System.out.println("Temps écoulé appel RMI distant: " + (end - start) + " ns");
 			System.out.println("Résultat appel RMI distant: " + result);
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
