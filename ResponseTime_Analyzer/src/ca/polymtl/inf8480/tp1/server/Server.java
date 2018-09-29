@@ -30,11 +30,10 @@ public class Server implements ServerInterface {
 	public Server() {
 		super();
 		initializeFilesAndLocks();
-		try {
-			Files.createDirectory(Paths.get(FILES_DIRECTORY_NAME));
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+		File directory = new File(FILES_DIRECTORY_NAME);
+		if(!directory.exists())
+		{
+			directory.mkdir();
 		}
 	}
 
