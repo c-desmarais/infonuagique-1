@@ -52,7 +52,7 @@ public class Client {
 		}
 		else if (args.length == 1) {
 			switch(args[0]) {
-				case "List": client.printlist();
+				case "list": client.printlist();
 							break;
 				
 				default: break;
@@ -160,7 +160,7 @@ public class Client {
 			Map<String,String> filesAndLocks = distantServerStub.list(credentials);
 			for(Map.Entry<String, String> entry: filesAndLocks.entrySet())
 			{
-				System.out.println("* " + entry.getKey() + "    " + (entry.getValue() == "" ? "non verouille" : entry.getValue()));
+				System.out.println("* " + entry.getKey() + "    " + (entry.getValue().equals("") ? "non verouille" : entry.getValue()));
 			}
 		}
 		catch (RemoteException e)
