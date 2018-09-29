@@ -2,6 +2,8 @@ package ca.polymtl.inf8480.tp1.server;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.rmi.ConnectException;
 import java.rmi.RemoteException;
 import java.rmi.registry.LocateRegistry;
@@ -28,6 +30,12 @@ public class Server implements ServerInterface {
 	public Server() {
 		super();
 		initializeFilesAndLocks();
+		try {
+			Files.createDirectory(Paths.get(FILES_DIRECTORY_NAME));
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 	private void run() {
