@@ -31,6 +31,7 @@ public class Client {
 
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
+	private final static String DISTANT_HOSTNAME = "132.207.12.114";
 
 	FakeServer localServer = null; // Pour tester la latence d'un appel de
 									// fonction normal.
@@ -38,16 +39,15 @@ public class Client {
 	private static ServerInterface distantServerStub = null;
 
 	public static void main(String[] args) throws RemoteException {
-		String distantHostname = "132.207.12.114";
-		Client client = new Client(distantHostname);
+		Client client = new Client(DISTANT_HOSTNAME);
 		// client.run();
 		if (args.length == 3) {
 			switch (args[0]) {
 			case "new":
 				client.newUser(args[1], args[2]);
 				break;
-
 			default:
+				client.printArgErrorMsg();
 				break;
 			}
 		} else if (args.length == 2) {
@@ -65,6 +65,7 @@ public class Client {
 				client.push(args[1]);
 				break;
 			default:
+				client.printArgErrorMsg();
 				break;
 			}
 		} else if (args.length == 1) {
@@ -76,19 +77,21 @@ public class Client {
 				client.syncLocalDirectory();
 				break;
 			default:
+				client.printArgErrorMsg();
 				break;
 			}
 		} else {
-			client.PrintArgErrorMsg();
+			client.printArgErrorMsg();
 		}
 	}
 
-	private void PrintArgErrorMsg() {
+	private void printArgErrorMsg() {
 		System.out.println("Veuillez specifier des arguments parmi la liste suivante:");
 		System.out.println("new <login> <password>");
-		System.out.println("create <name>");
-		System.out.println("list <name>");
-		System.out.println("list <name>");
+		System.out.println("create <file name>");
+		System.out.println("list");
+		System.out.println("lock <file name>");
+		System.out.println("push <file name>");		
 	}
 
 	public Client(String distantServerHostname) {
@@ -99,10 +102,14 @@ public class Client {
 		}
 
 		// localServer = new FakeServer();
-		localServerStub = loadServerStub("127.0.0.1");
+		//localServerStub = loadServerStub("127.0.0.1");
 
 		if (distantServerHostname != null) {
 			distantServerStub = loadServerStub(distantServerHostname);
+		}
+		else
+		{
+			System.out.println("Invalid distantServerHostname");
 		}
 	}
 
