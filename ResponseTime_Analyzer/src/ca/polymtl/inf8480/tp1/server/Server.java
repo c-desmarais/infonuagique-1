@@ -26,15 +26,37 @@ public class Server implements ServerInterface {
 	Map<String, String> filesAndLocks = new HashMap<String, String>();
 	
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
+	private final static String METADATA_DIRECTORY_NAME = "./MetaDataDirectory/";
+	private final static String CREDENTIALS_METADATA_FILE = "credentials.txt";
+	private final static String LOCK_METADATA_FILE = "lock.txt";
 	
 	public static void main(String[] args) {
 		Server server = new Server();
 		server.run();
 	}
 
+	/*
+	 * Constructeur du serveur. 
+	 * Se charge de l'initialisation des differentes donnees ainsi que de la creation du repertoire
+	 * pour les fichiers stockes sur le serveur.
+	 */
 	public Server() {
 		super();
-		initializeFilesAndLocks();
+		
+		// initialiser les donnees concernant les noms dutilisateurs et mot de passe (recuperation des donnees).
+		initializeMeta(CREDENTIALS_METADATA_FILE);
+		
+		// initialiser les donnees concernant les locks sur chaque fichier.
+		File f = new File(METADATA_DIRECTORY_NAME + LOCK_METADATA_FILE);
+		
+		// si certaines donnees peuvent etre recuperees, les recuperer.
+		if (f.exists() && f.length()>0) {
+			initializeMeta(LOCK_METADATA_FILE);
+		} else {  // initialiser la structure de donnees pour les locks comme si personne navait de lock sur aucun fichier.
+			initializeFilesAndLocks();
+		}
+		
+		// Creation du repertoire pour les fichiers stockes sur le serveur.
 		File directory = new File(FILES_DIRECTORY_NAME);
 		if(!directory.exists())
 		{
@@ -42,6 +64,10 @@ public class Server implements ServerInterface {
 		}
 	}
 	
+	/*
+	 * Initialisation de la structure de donnees contenant les fichiers et leurs locks respectifs.
+	 * Cette initialisation sassure qu'aucun lock nest mis sur les fichiers (empty string). 
+	 */
 	private void initializeFilesAndLocks()
 	{
 		File dir = new  File(FILES_DIRECTORY_NAME);
@@ -51,6 +77,29 @@ public class Server implements ServerInterface {
 			for(File aFile : files) {
 				filesAndLocks.put(aFile.getName(), "");
 			}
+		}
+	}
+	
+	/*
+	 * Cette fonction recupere les fichiers contenant les meta donnees sils existent et contiennent des meta donnees.
+	 * Par la suite, stocke les informations dans les structures de donnees appropriees.
+	 */
+	private void initializeMeta(String filename) 
+	{
+		try {
+			File f = new File(METADATA_DIRECTORY_NAME + filename);
+			if (f.exists() && !f.isDirectory() && f.length() > 0) {
+				String fileContent = new String(Files.readAllBytes(Paths.get(METADATA_DIRECTORY_NAME + filename)));
+				Map<String, String> map = parseMetaMap(fileContent);
+				if (filename.equals(CREDENTIALS_METADATA_FILE)) {
+					users = map;
+				} else if (filename.equals(LOCK_METADATA_FILE)) {
+					// TODO : debug this (verify that this gets filled up properly : bug on list)
+					filesAndLocks = map;
+				}
+			} 
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
@@ -84,6 +133,7 @@ public class Server implements ServerInterface {
 		if(users.get(login) == null)
 		{
 			users.put(login, password);
+			saveMetaToFile(users, CREDENTIALS_METADATA_FILE);
 			return true;
 		}
 		return false;
@@ -107,6 +157,7 @@ public class Server implements ServerInterface {
 			if(file.createNewFile())
 			{
 				filesAndLocks.put(fileName, "");
+				saveMetaToFile(filesAndLocks, LOCK_METADATA_FILE);
 				return true;
 			}
 			return false;
@@ -144,7 +195,6 @@ public class Server implements ServerInterface {
 					content = new String(Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME+entry.getKey())));
 					filesAndContent.put(entry.getKey(), content);
 				} catch (IOException e) {
-					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
 		}
@@ -200,6 +250,9 @@ public class Server implements ServerInterface {
 			{
 				infos.put(currentUser, null);
 			}
+			
+			// sauvegarder un fichier de metadonnees des locks respectifs des fichiers
+			saveMetaToFile(filesAndLocks, LOCK_METADATA_FILE);
 			return infos;
 				
 		} else { 
@@ -223,20 +276,72 @@ public class Server implements ServerInterface {
 				// check if file is already locked by another client
 				String currentUser = filesAndLocks.get(fileName);
 				if (currentUser.equals(credentials.get(0))) {
-					System.out.println("writing content to file" + content);
+					System.out.println("writing content to file" + content + "content.len" + content.length() );
 					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
 
-					System.out.println("writing content to file" + content);
 					filesAndLocks.put(fileName, "");
 				}
 			} else { 
 				throw new RemoteException(fileName + " existe pas.");
 			}
+			
+			// sauvegarder un fichier de metadonnees des locks respectifs des fichiers
+			saveMetaToFile(filesAndLocks, LOCK_METADATA_FILE);
 		} 
 		catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
+	}
+	
+	/*
+	 * Methode permettant de sauvegarder des donnees provenant dune hashmap dans un fichier
+	 * contenant les meta donnees (soit les informations des credentials ou celles des fichiers
+	 * et de leurs locks respectifs. 
+	 */
+	private void saveMetaToFile(Map<String, String> meta, String filename) throws RemoteException {
+		File directory = new File(METADATA_DIRECTORY_NAME);
+		if(!directory.exists())
+		{
+			directory.mkdir();
+		}
+		
+		String stringifiedMap = stringifyMetaMap(meta);
+		
+		try {
+			Files.write(Paths.get(METADATA_DIRECTORY_NAME + filename), stringifiedMap.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/*
+	 * Methode permettant de convertir une Map<String, String> en String afin de pouvoir
+	 * eventuellement sauvegarder cette structure de donnees dans des fichiers de metadonnees.
+	 */
+	private String stringifyMetaMap(Map<String, String> map) {
+		String stringifiedMap = "";
+		for (Map.Entry<String, String> entry : map.entrySet()) {
+			stringifiedMap += entry.getKey() + "," + entry.getValue() + "|";
+		}
+		return stringifiedMap;
+	}
+	
+	/*
+	 * Methode permettant de construire une map a partir dune String donnee (parse). 
+	 * Utilise dans le cas ou lon souhaite lire des fichiers de donnees afin de recuperer les donnees
+	 * appropriees (credentials ou locks de fichiers).
+	 */
+	private Map<String, String> parseMetaMap(String metaMap) {
+		Map<String, String> meta = new HashMap<String, String>();
+		String[] metaStrArray = metaMap.split("|");
+		for (String el : metaStrArray) {
+			String[] data = el.split(",");
+			if (data.length == 2) {
+				meta.put(data[0], data[1]);	
+			}
+		}
+		return meta;
 	}
 	
 }
