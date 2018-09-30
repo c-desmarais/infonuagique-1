@@ -101,16 +101,15 @@ public class Server implements ServerInterface {
 				String fileContent = new String(Files.readAllBytes(Paths.get(METADATA_DIRECTORY_NAME + filename)));
 				Map<String, String> map = parseMetaMap(fileContent);
 				if (filename.equals(CREDENTIALS_METADATA_FILE)) {
-					synchronized(lockUsers) {
-					    // L'acces a users ici est thread safe
-						users = map;
-					}
+				    // L'acces a users ici est thread safe
+					users = map;
+					// TODO remove when tp finished. for DEBUG purpose
+					System.out.print(stringifyMetaMap(users));
 				} else if (filename.equals(LOCK_METADATA_FILE)) {
 					// TODO : debug this (verify that this gets filled up properly : bug on list)
-					synchronized(lockFiles) {
-						// L'acces a filesAndLocks ici est thread safe
-						filesAndLocks = map;	
-					}
+					// TODO check for each file, if it is still present in the FilesDirectory
+					filesAndLocks = map;	
+					// TODO Check for other files in the Directory that could be absent from the metadata file and add it to the map and to the file
 				}
 			} 
 		} catch (IOException e) {
