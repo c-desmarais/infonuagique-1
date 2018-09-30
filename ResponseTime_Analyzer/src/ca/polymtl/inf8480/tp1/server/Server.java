@@ -326,7 +326,7 @@ public class Server implements ServerInterface {
 	private String stringifyMetaMap(Map<String, String> map) {
 		String stringifiedMap = "";
 		for (Map.Entry<String, String> entry : map.entrySet()) {
-			stringifiedMap += entry.getKey() + "," + entry.getValue() + "|";
+			stringifiedMap += entry.getKey() + "," + entry.getValue() + "-";
 		}
 		return stringifiedMap;
 	}
@@ -338,7 +338,7 @@ public class Server implements ServerInterface {
 	 */
 	private Map<String, String> parseMetaMap(String metaMap) {
 		Map<String, String> meta = new HashMap<String, String>();
-		String[] metaStrArray = metaMap.split("|");
+		String[] metaStrArray = metaMap.split("-");
 		for (String el : metaStrArray) {
 			String[] data = el.split(",");
 			if (data.length == 2) {
