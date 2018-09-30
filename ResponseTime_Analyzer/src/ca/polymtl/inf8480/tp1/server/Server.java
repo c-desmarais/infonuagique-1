@@ -27,10 +27,6 @@ public class Server implements ServerInterface {
 	Map<String, String> users = new HashMap<String, String>();
 	Map<String, String> filesAndLocks = new HashMap<String, String>();
 	
-	// Objets bidons permettant de faire des locks sur les ressources partagees
-	Object lockUsers = new Object();
-	Object lockFiles = new Object();
-	
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
 	private final static String METADATA_DIRECTORY_NAME = "./MetaDataDirectory/";
 	private final static String CREDENTIALS_METADATA_FILE = "credentials.txt";
