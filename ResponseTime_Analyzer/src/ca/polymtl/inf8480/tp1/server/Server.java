@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.rmi.ConnectException;
@@ -22,8 +23,13 @@ import ca.polymtl.inf8480.tp1.shared.ServerInterface;
 
 public class Server implements ServerInterface {
 
+	// Ressources pouvant etre potentiellement etre utilisees de facon concurentielle par les differents threads sur le serveur
 	Map<String, String> users = new HashMap<String, String>();
 	Map<String, String> filesAndLocks = new HashMap<String, String>();
+	
+	// Objets bidons permettant de faire des locks sur les ressources partagees
+	Object lockUsers = new Object();
+	Object lockFiles = new Object();
 	
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
 	private final static String METADATA_DIRECTORY_NAME = "./MetaDataDirectory/";
@@ -75,7 +81,10 @@ public class Server implements ServerInterface {
 		if(files!=null)
 		{
 			for(File aFile : files) {
-				filesAndLocks.put(aFile.getName(), "");
+				synchronized(lockFiles) {
+				    // acces a filesAndLocks ici est thread safe
+					filesAndLocks.put(aFile.getName(), "");
+				}
 			}
 		}
 	}
@@ -92,17 +101,23 @@ public class Server implements ServerInterface {
 				String fileContent = new String(Files.readAllBytes(Paths.get(METADATA_DIRECTORY_NAME + filename)));
 				Map<String, String> map = parseMetaMap(fileContent);
 				if (filename.equals(CREDENTIALS_METADATA_FILE)) {
-					users = map;
+					synchronized(lockUsers) {
+					    // L'acces a users ici est thread safe
+						users = map;
+					}
 				} else if (filename.equals(LOCK_METADATA_FILE)) {
 					// TODO : debug this (verify that this gets filled up properly : bug on list)
-					filesAndLocks = map;
+					synchronized(lockFiles) {
+						// L'acces a filesAndLocks ici est thread safe
+						filesAndLocks = map;	
+					}
 				}
 			} 
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
-
+	
 	private void run() {
 		if (System.getSecurityManager() == null) {
 			System.setSecurityManager(new SecurityManager());
@@ -127,24 +142,36 @@ public class Server implements ServerInterface {
 
 	/*
 	 * Méthode accessible par RMI. Return false if the user already exists.
+	 * Cette methode est thread safe et va bloquer les autres thread si un thread est deja entrain
+	 * dacceder a la methode.
 	 */
 	@Override
-	public boolean newUser(String login, String password) throws RemoteException {
+	public synchronized boolean newUser(String login, String password) throws RemoteException {
 		if(users.get(login) == null)
 		{
+		    //access a users ici est thread safe
 			users.put(login, password);
+			
 			saveMetaToFile(users, CREDENTIALS_METADATA_FILE);
 			return true;
 		}
 		return false;
 	}
 
-	public boolean verify(List<String> credentials) throws RemoteException {
+	/*
+	 * Cette methode verifie que les informations dauthentification fournies sont valides.
+	 */
+	private boolean verify(List<String> credentials) throws RemoteException {
 		return credentials.get(1).equals(users.get(credentials.get(0)));
 	}
 
+	/*
+	 * Méthode accessible par RMI permettant de creer un utilisateur.
+	 * Cette methode est thread safe, c-a-d quelle bloque lorsquun thread essaie de lui acceder
+	 * lorsquelle est utilisee.
+	 */
 	@Override
-	public boolean create(String fileName, List<String> credentials) throws RemoteException {
+	public synchronized boolean create(String fileName, List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
@@ -157,6 +184,7 @@ public class Server implements ServerInterface {
 			if(file.createNewFile())
 			{
 				filesAndLocks.put(fileName, "");
+			
 				saveMetaToFile(filesAndLocks, LOCK_METADATA_FILE);
 				return true;
 			}
@@ -170,6 +198,10 @@ public class Server implements ServerInterface {
 		}
 	}
 
+	/*
+	 * Méthode accessible par RMI permettant de lister les fichiers et les
+	 * utilisateurs qui possedent un lock dessus.
+	 */
 	@Override
 	public Map<String, String> list(List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
@@ -180,8 +212,14 @@ public class Server implements ServerInterface {
 		return filesAndLocks;
 	}
 
+	/*
+	 * Méthode accessible par RMI (thread safe) qui construit une map avec le nom de chaque
+	 * fichier et leur contenu et retourne cette map.
+	 * Cette methode est thread safe pour sassurer quil ny ai pas de corruption au niveau de
+	 * filesAndContent par exemple.
+	 */
 	@Override
-	public Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException {
+	public synchronized Map<String, String> syncLocalDirectory(List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
@@ -201,49 +239,63 @@ public class Server implements ServerInterface {
 		return filesAndContent;
 	}
 
+	/*
+	 * Méthode permettant de recuperer le contenu dun fichier donne.
+	 * La methode est thread safe pour eviter la corruption au niveau de certaines structures de donnnes
+	 * dans la methode tel que les byte arrays.
+	 */
 	@Override
-	public String get(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
+	public synchronized String get(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
 		
+		String fileContent = null;
 		try {
 			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME+fileName));
 			byte[] hash = MessageDigest.getInstance("MD5").digest(b);
 			
-			if(Arrays.equals(hash, checksum))
+			if(!Arrays.equals(hash, checksum))
 			{
-				return null;			
-			}
-			else
-			{
-				return new String(b);
+				fileContent = new String(b);
 			}
 			
 			
-		} catch (IOException | NoSuchAlgorithmException e) {
-			// TODO gerer le cas ou le nom du fichier est inexistant
-			e.printStackTrace();
+		} catch (NoSuchFileException e) {
+			throw new RemoteException("Le fichier demande" + fileName + "nexiste pas.");
 		}
-		return null;
+		catch (IOException | NoSuchAlgorithmException e) {
+			e.printStackTrace();
+			throw new RemoteException(e.getMessage());
+		}
+		
+		return fileContent;
 	}
 
+	/*
+	 * Méthode accessible par RMI permettant de locker un fichier.
+	 * Cette methode retourne une map contenant un element avec le nom de lutilisateur du fichier (lock)
+	 * ainsi que le contenu du fichier a jour. Cette methode est thread safe.
+	 */
 	@Override
-	public Map<String, String> lock(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
+	public synchronized Map<String, String> lock(String fileName, byte[] checksum, List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
 		
-		// check if file exists
+		// regarder si le fichier existe
 		File f = new File(FILES_DIRECTORY_NAME + fileName);
 		if (f.exists() && !f.isDirectory()) {
-			// check if file is already locked by another client
+			// regarder si le fichier est lock par un autre client
 			String currentUser = filesAndLocks.get(fileName);
+			
+			// map contenant un element : lutilisateur (lock) du fichier, ainsi que le contenu du fichier
 			Map<String, String> infos = new HashMap<String, String>();
 			if (currentUser.equals("")) {
 				filesAndLocks.put(fileName, credentials.get(0));
+				
 				infos.put(credentials.get(0), get(fileName, checksum, credentials));
 			}
 			else // dont update file content if the file is locked by other user
@@ -260,29 +312,29 @@ public class Server implements ServerInterface {
 		}		
 	}
 	
+	/*
+	 * Méthode accessible par RMI permettant de mettre un fichier sur le serveur.
+	 * Cette methode est thread safe. 
+	 */
 	@Override
-	public void push(String fileName, String content, List<String> credentials) throws RemoteException {
+	public synchronized void push(String fileName, String content, List<String> credentials) throws RemoteException {
 		if(!verify(credentials))
 		{
 			throw new RemoteException("Invalid credentials for user " + credentials.get(0));
 		}
 		
-		// TODO check if we need to verify more here instead than in the client (lock)
 		try {
 		
-			// check if file exists
+			// verifier si le fichier existe, que ce nest pas un directory et que lutilisateur a le lock sur le fichier
 			File f = new File(FILES_DIRECTORY_NAME + fileName);
-			if (f.exists() && !f.isDirectory()) {
-				// check if file is already locked by another client
-				String currentUser = filesAndLocks.get(fileName);
-				if (currentUser.equals(credentials.get(0))) {
-					System.out.println("writing content to file" + content + "content.len" + content.length() );
-					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
-
-					filesAndLocks.put(fileName, "");
-				}
-			} else { 
+			if (f.exists() && !f.isDirectory() && filesAndLocks.get(fileName).equals(credentials.get(0))) {
+				System.out.println("writing content to file" + content + "content.len" + content.length() );
+				Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
+				filesAndLocks.put(fileName, "");			
+			} else if (!f.exists()) { 
 				throw new RemoteException(fileName + " existe pas.");
+			} else if (!filesAndLocks.get(fileName).equals(credentials.get(0))) {
+				throw new RemoteException("Vous navez pas de lock sur le fichier. Vous devez prealablement lavoir pour faire un push.");
 			}
 			
 			// sauvegarder un fichier de metadonnees des locks respectifs des fichiers
@@ -292,7 +344,8 @@ public class Server implements ServerInterface {
 			e.printStackTrace();
 		}	
 	}
-	
+
+
 	/*
 	 * Methode permettant de sauvegarder des donnees provenant dune hashmap dans un fichier
 	 * contenant les meta donnees (soit les informations des credentials ou celles des fichiers
@@ -343,5 +396,7 @@ public class Server implements ServerInterface {
 		}
 		return meta;
 	}
+	
+	
 	
 }

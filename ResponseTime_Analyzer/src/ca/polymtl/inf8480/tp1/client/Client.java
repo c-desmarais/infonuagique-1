@@ -107,6 +107,9 @@ public class Client {
 		}
 	}
 
+	/*
+	 * Méthode permettant dappeler le serveur distant afin denregistrer un nouvel utilisateur.
+	 */
 	private void newUser(String login, String password) {
 		try {
 			if (distantServerStub.newUser(login, password)) {
@@ -120,6 +123,9 @@ public class Client {
 		}
 	}
 
+	/*
+	 * Méthode permettant de creer un fichier local contenant les informations dauthentification.
+	 */
 	private Path createLocalAuthFile(String login, String password) {
 		try {
 			return Files.write(Paths.get(CREDENTIALS_FILE_NAME), Arrays.asList(login, password),
@@ -130,6 +136,9 @@ public class Client {
 		return null;
 	}
 
+	/*
+	 * Méthode permettant dapeller le serveur distant afin de creer un fichier sur celui ci.
+	 */
 	private void create(String fileName) {
 		List<String> credentials = getSavedCredentials();
 		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
@@ -145,6 +154,9 @@ public class Client {
 		}
 	}
 
+	/*
+	 * Méthode permettant dapeller le serveur distant afin de lister les fichiers ainsi que leurs locks.
+	 */
 	private List<String> getSavedCredentials() {
 		List<String> credentials = new ArrayList<String>();
 		try {
@@ -157,6 +169,9 @@ public class Client {
 		return credentials;
 	}
 	
+	/*
+	 * Methode permettant dajouter une extension txt au fichier si lextension na pas ete fournie.
+	 */
 	private String addFileExtensionIfAbsent(String fileName, String extensionToAdd)
 	{
 		if (fileName == null)
@@ -174,6 +189,11 @@ public class Client {
 		return fileNameAndExtension;
 	}
 
+
+	/*
+	 * Methode permettant dappeler le serveur distant pour recuperer la liste de locks et users.
+	 * Cette methode imprime cette liste dans la console.
+	 */
 	private void printlist() {
 		List<String> credentials = getSavedCredentials();
 
@@ -188,6 +208,11 @@ public class Client {
 		}
 	}
 
+	/*
+	 * Methode permettant dappeler le serveur distant pour recuperer le contenu des fichiers.
+	 * Cette methode sassure de modifier les fichiers en local afin quils soient synchronises avec
+	 * le serveur.
+	 */
 	private void syncLocalDirectory() {
 		List<String> credentials = getSavedCredentials();
 
@@ -201,11 +226,16 @@ public class Client {
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/*
+	 * Methode permettant dappeler le serveur distant pour recuperer le contenu dun fichier donne.
+	 * Cette methode fait egalement des verifications afin de savoir si le fichier existe et
+	 * de recuperer le checksum de celui ci sil existe. Si le fichier nexiste pas, on envoie un
+	 * checksum null. 
+	 */
 	private void get(String fileName) {
 		List<String> credentials = getSavedCredentials();
 		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
@@ -228,29 +258,28 @@ public class Client {
 					System.out.println(fileName + " synchronise.");
 				}
 			} catch (Exception e1) {
-				// TODO Auto-generated catch block
 				e1.printStackTrace();
 			}
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/*
+	 * Methode permettant dappeler le serveur distant pour verouiller un fichier donne.
+	 */
 	private void lock(String fileName) {
 		List<String> credentials = getSavedCredentials();
 		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
 
 		try {
-			// check if file exists
 			File f = new File(FILES_DIRECTORY_NAME + fileName);
 
 			byte[] checksum = null;
 
-			// if the file exists, get the appropriate checksum
+			// Si le fichier existe, prendre le checksum approprie
 			if (f.exists()) {
 				byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
 				checksum = MessageDigest.getInstance("MD5").digest(b);
@@ -258,7 +287,7 @@ public class Client {
 
 			Map<String, String> idAndContent = distantServerStub.lock(fileName, checksum, credentials);
 			Map.Entry<String, String> entry = idAndContent.entrySet().iterator().next();
-			// The file is used by me
+			
 			if (credentials.get(0).equals(entry.getKey())) {
 				// Imprimer message a lutilisateur
 				System.out.println(fileName + " verouille .");
@@ -270,21 +299,25 @@ public class Client {
 					System.out.println(" (Modifs a " + fileName + " )");
 				}
 
-			} else { // The file is locked by someone else
+			} else { // Le fichier est verouille par quelquun dautre
 				System.out.println(fileName + " est deja verouille par " + entry.getKey());
 			}
 
 		} catch (RemoteException e) {
 			System.out.println(e.getMessage());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		} catch (NoSuchAlgorithmException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/*
+	 * Methode appelant le serveur distant pour y envoyer le contenu dun fichier.
+	 * Cette methode verifie entre autres que le fichier est bien verouille par
+	 * lutilisateur courant et quil existe simplement afin de renvoyer un message derreur
+	 * clair lorsque ce nest pas le cas.
+	 */
 	private void push(String fileName) {
 		List<String> credentials = getSavedCredentials();
 		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
@@ -295,10 +328,10 @@ public class Client {
 			if (userLock == null || userLock.equals("")) {
 				System.out.println("operation refusee : vous devez verouiller le fichier d'abord. ");
 			} else if (userLock.equals(credentials.get(0))) {
-				// check if file exists
+				// verifier si le fichier existe
 				File f = new File(FILES_DIRECTORY_NAME + fileName);
 				if (f.exists() && !f.isDirectory()) {
-					// read the content of the file and send it to server
+					// lire le contenu du fichier et lenvoyer au serveur
 					String content = new String(Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName)));
 					distantServerStub.push(fileName, content, credentials);
 					System.out.println(fileName + " a ete envoye au serveur.");
@@ -311,11 +344,13 @@ public class Client {
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
+	/*
+	 * Methode permettant de recuperer linterface serveur sur le registre RMI.
+	 */
 	private ServerInterface loadServerStub(String hostname) {
 		ServerInterface stub = null;
 
