@@ -177,6 +177,7 @@ public class Client {
 			for (Map.Entry<String, String> entry : filesAndContent.entrySet()) {
 				Files.write(Paths.get(FILES_DIRECTORY_NAME + entry.getKey()),
 						entry.getValue().getBytes(StandardCharsets.UTF_8));
+				System.out.println(entry.getKey() + " synchronise.");
 			}
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
@@ -195,6 +196,7 @@ public class Client {
 			String file = distantServerStub.get(fileName, checksum, credentials);
 			if (file != null) {
 				Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), file.getBytes(StandardCharsets.UTF_8));
+				System.out.println(fileName + " synchronise.");
 			}
 		} catch (RemoteException e) {
 			System.out.println("Erreur: " + e.getMessage());
@@ -203,6 +205,7 @@ public class Client {
 				String file = distantServerStub.get(fileName, null, credentials);
 				if (file != null) {
 					Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), file.getBytes(StandardCharsets.UTF_8));
+					System.out.println(fileName + " synchronise.");
 				}
 			} catch (Exception e1) {
 				// TODO Auto-generated catch block
@@ -267,7 +270,7 @@ public class Client {
 		try {
 			Map<String, String> filesAndLocks = distantServerStub.list(credentials);
 			String userLock = filesAndLocks.get(fileName);
-			if (userLock == null) {
+			if (userLock == null || userLock.equals("")) {
 				System.out.println("operation refusee : vous devez verouiller le fichier d'abord. ");
 			} else if (userLock.equals(credentials.get(0))) {
 				// check if file exists
