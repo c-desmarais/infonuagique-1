@@ -97,6 +97,13 @@ public class Client {
 		} else {
 			System.out.println("Invalid distantServerHostname");
 		}
+		
+		// Creation du repertoire pour les fichiers stockes sur le client.
+		File directory = new File(FILES_DIRECTORY_NAME);
+		if(!directory.exists())
+		{
+			directory.mkdir();
+		}
 	}
 
 	private void newUser(String login, String password) {
