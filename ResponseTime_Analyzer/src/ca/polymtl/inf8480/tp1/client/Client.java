@@ -172,11 +172,6 @@ public class Client {
 	private void syncLocalDirectory() {
 		List<String> credentials = getSavedCredentials();
 
-		File directory = new File(FILES_DIRECTORY_NAME);
-		if (!directory.exists()) {
-			directory.mkdir();
-		}
-
 		try {
 			Map<String, String> filesAndContent = distantServerStub.syncLocalDirectory(credentials);
 			for (Map.Entry<String, String> entry : filesAndContent.entrySet()) {
