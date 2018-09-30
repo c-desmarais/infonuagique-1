@@ -142,7 +142,7 @@ public class Client {
 	private List<String> getSavedCredentials() {
 		List<String> credentials = new ArrayList<String>();
 		try {
-			credentials = Files.readAllLines(Paths.get(CREDENTIALS_FILE_NAME));
+			credentials = Files.readAllLines(Paths.get(CREDENTIALS_FILE_NAME), StandardCharsets.UTF_8);
 		} catch (NoSuchFileException e) {
 			System.out.println("Vous devez vous enregistrer d'abord avec la commande new <id> <password>.");
 		} catch (IOException e) {
