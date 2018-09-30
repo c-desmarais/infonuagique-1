@@ -27,6 +27,7 @@ public class Client {
 
 	private final static String CREDENTIALS_FILE_NAME = "localAuthFile.txt";
 	private final static String FILES_DIRECTORY_NAME = "./FilesDirectory/";
+	private final static String TXT_EXTENSION = ".txt";
 	private final static String DISTANT_HOSTNAME = "132.207.12.114";
 
 	private static ServerInterface distantServerStub = null;
@@ -131,6 +132,7 @@ public class Client {
 
 	private void create(String fileName) {
 		List<String> credentials = getSavedCredentials();
+		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
 
 		try {
 			if (distantServerStub.create(fileName, credentials)) {
@@ -153,6 +155,23 @@ public class Client {
 			e.printStackTrace();
 		}
 		return credentials;
+	}
+	
+	private String addFileExtensionIfAbsent(String fileName, String extensionToAdd)
+	{
+		if (fileName == null)
+			return null;
+		if (fileName.equals(""))
+			return "";
+
+		String fileNameAndExtension = fileName;
+		int extensionIdx = fileName.lastIndexOf(".");
+		if (extensionIdx == -1) {
+			fileNameAndExtension += extensionToAdd;
+		} else if (extensionIdx == (fileName.length() - 1)) {
+			fileNameAndExtension = fileName.substring(0, fileName.length() - 1) + extensionToAdd;
+		}
+		return fileNameAndExtension;
 	}
 
 	private void printlist() {
@@ -189,6 +208,7 @@ public class Client {
 
 	private void get(String fileName) {
 		List<String> credentials = getSavedCredentials();
+		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
 
 		try {
 			byte[] b = Files.readAllBytes(Paths.get(FILES_DIRECTORY_NAME + fileName));
@@ -222,6 +242,7 @@ public class Client {
 
 	private void lock(String fileName) {
 		List<String> credentials = getSavedCredentials();
+		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
 
 		try {
 			// check if file exists
@@ -266,6 +287,7 @@ public class Client {
 
 	private void push(String fileName) {
 		List<String> credentials = getSavedCredentials();
+		fileName = addFileExtensionIfAbsent(fileName, TXT_EXTENSION);
 
 		try {
 			Map<String, String> filesAndLocks = distantServerStub.list(credentials);
