@@ -77,10 +77,8 @@ public class Server implements ServerInterface {
 		if(files!=null)
 		{
 			for(File aFile : files) {
-				synchronized(lockFiles) {
-				    // acces a filesAndLocks ici est thread safe
-					filesAndLocks.put(aFile.getName(), "");
-				}
+			    // acces a filesAndLocks ici est thread safe
+				filesAndLocks.put(aFile.getName(), "");
 			}
 		}
 	}
