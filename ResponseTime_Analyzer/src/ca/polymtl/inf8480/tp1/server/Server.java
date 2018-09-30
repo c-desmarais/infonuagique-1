@@ -93,9 +93,13 @@ public class Server implements ServerInterface {
 				Map<String, String> map = parseMetaMap(fileContent);
 				if (filename.equals(CREDENTIALS_METADATA_FILE)) {
 					users = map;
+					// TODO remove when tp finished. for DEBUG purpose
+					System.out.print(stringifyMetaMap(users));
 				} else if (filename.equals(LOCK_METADATA_FILE)) {
 					// TODO : debug this (verify that this gets filled up properly : bug on list)
+					// TODO check for each file, if it is still present in the FilesDirectory
 					filesAndLocks = map;
+					// TODO Check for other files in the Directory that could be absent from the metadata file and add it to the map and to the file
 				}
 			} 
 		} catch (IOException e) {
