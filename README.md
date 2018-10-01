@@ -4,7 +4,7 @@ Afin d'exécuter ce TP, veuillez procéder avec les étapes suivantes:
 
 **Envoyer le travail sur la machine virtuelle:**
 ```
-scp -i sshkeys.pem 1762064-1721384-TP1-INF8480.tar.gz ubuntu@ip-flottante
+scp -i sshkeys.pem 1762064-1721384-TP1-INF8480.tar.gz ubuntu@ip-flottante:(répertoire de destination)
 ```
 
 Notez que l'ip flottante utilisée dans ce TP était: 132.207.12.114. 
@@ -30,6 +30,12 @@ Décompresser le fichier envoyé sur la VM:
 ```
 tar xvzf 1762064-1721384-TP1-INF8480.tar.gz
 ```
+Recompiler les sources:
+À partir du dossier ResponseTime_Analyzer, faire les deux commandes suivante:
+```
+ant clean
+ant
+```
 
 Exécuter le serveur:
 ```
@@ -52,6 +58,17 @@ Se connecter à la machine virtuelle en effectuant la commande suivante:
 ```
 ssh -i sshkeys.pem ubuntu@ip-flottante
 ```
+Recompiler les sources:
+À partir du dossier ResponseTime_Analyzer, faire les deux commandes suivante:
+```
+ant clean
+ant
+```
+
+Si nécéssaire donner les permissions :
+```
+chmod u+x ./server.sh
+```
 
 A partir de la machine virtuelle, se rendre dans le dossier bin:
 ```
@@ -70,13 +87,25 @@ ssh -i sshkeys.pem ubuntu@ip-flottante
 
 Exécuter le serveur
 ```
-  1762064-1721384-TP1-INF8480/Partie2/ResponseTime_Analyzer/server.sh
+  1762064-1721384-TP1-INF8480/Partie2/ResponseTime_Analyzer/server.sh 132.207.12.114
 ```
 
 **Installation du client sur la machine locale:**
 - Se rendre dans le dossier approprié:
 ```
 cd 1762064-1721384-TP1-INF8480/Partie2/ResponseTime_Analyzer/
+```
+
+Recompiler les sources:
+À partir du dossier ResponseTime_Analyzer, faire les deux commandes suivante:
+```
+ant clean
+ant
+```
+
+Si nécéssaire donner les permissions :
+```
+chmod u+x ./client.sh
 ```
 
 - Entrer les commandes du TP par exemple : 
