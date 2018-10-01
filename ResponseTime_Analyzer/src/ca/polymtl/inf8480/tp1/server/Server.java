@@ -316,7 +316,6 @@ public class Server implements ServerInterface {
 			// verifier si le fichier existe, que ce nest pas un directory et que lutilisateur a le lock sur le fichier
 			File f = new File(FILES_DIRECTORY_NAME + fileName);
 			if (f.exists() && !f.isDirectory() && filesAndLocks.get(fileName).equals(credentials.get(0))) {
-				System.out.println("writing content to file" + content + "content.len" + content.length() );
 				Files.write(Paths.get(FILES_DIRECTORY_NAME + fileName), content.getBytes(StandardCharsets.UTF_8), StandardOpenOption.CREATE);
 				filesAndLocks.put(fileName, "");			
 			} else if (!f.exists()) { 

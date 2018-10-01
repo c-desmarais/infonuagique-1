@@ -83,6 +83,8 @@ public class Client {
 		System.out.println("new <login> <password>");
 		System.out.println("create <file name>");
 		System.out.println("list");
+		System.out.println("syncLocalDirectory");
+		System.out.println("get <file name>");
 		System.out.println("lock <file name>");
 		System.out.println("push <file name>");
 	}
