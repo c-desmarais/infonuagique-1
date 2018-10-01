@@ -1,7 +1,0 @@
-/.metadata/
-*.jar
-*.class
-ResponseTime_Analyzer/FilesDirectory/*
-ResponseTime_Analyzer/localAuthFile.txt
-RemoteSystemsTempFiles/*
-bin/*
